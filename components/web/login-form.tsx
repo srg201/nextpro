@@ -6,6 +6,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import z from "zod";
 import Link from "next/link";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -50,19 +51,22 @@ export const LoginForm = () => {
       const response = await authClient.signIn.email(data);
 
       if (response.error) {
-        setErrorMessage(
-          response.error?.message || "Sign in failed. Please try again."
-        );
+        const errorMsg =
+          response.error?.message || "Sign in failed. Please try again.";
+        setErrorMessage(errorMsg);
+        toast.error(errorMsg);
         return;
       }
 
       if (response.data?.user) {
+        toast.success(`Welcome back, ${response.data.user.name || "User"}!`);
         router.push("/");
       }
     } catch (error: any) {
-      setErrorMessage(
-        error?.message || "An unexpected error occurred. Please try again."
-      );
+      const errorMsg =
+        error?.message || "An unexpected error occurred. Please try again.";
+      setErrorMessage(errorMsg);
+      toast.error(errorMsg);
     }
   };
 
