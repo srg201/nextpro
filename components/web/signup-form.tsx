@@ -49,21 +49,34 @@ export const SignupForm = () => {
     try {
       setErrorMessage("");
 
-      await authClient.signUp.email(data, {
+      // Step 1: Create the account
+      const signUpResponse = await authClient.signUp.email(data, {
         onRequest: () => {
-          // Called when the request starts
           setErrorMessage("");
         },
-        onSuccess: () => {
-          // Called when the request succeeds
-          toast.success(
-            `Account created successfully! Welcome, ${data.name}!`
-          );
-          router.push("/");
+        onSuccess: async () => {
+          // Step 2: Send OTP code to email after account creation
+          try {
+            await authClient.emailOtp.sendVerificationOtp({
+              email: data.email,
+              type: "email-verification",
+            });
+
+            toast.success("Account created! Check your email for verification code.");
+
+            // Step 3: Redirect to email verification page
+            router.push(`/auth/verify-email?email=${encodeURIComponent(data.email)}`);
+          } catch (error: any) {
+            const errorMsg =
+              error?.message ||
+              "Account created but failed to send verification code";
+            setErrorMessage(errorMsg);
+            toast.error(errorMsg);
+          }
         },
         onError: (ctx) => {
-          // Called when the request fails
-          const errorMsg = ctx.error?.message || "Sign up failed. Please try again.";
+          const errorMsg =
+            ctx.error?.message || "Sign up failed. Please try again.";
           setErrorMessage(errorMsg);
           toast.error(errorMsg);
         },
