@@ -1,21 +1,11 @@
-import { Suspense } from "react";
+"use client";
+
+import { useSearchParams } from "next/navigation";
 import { EmailOTPVerification } from "@/components/web/email-otp-verification";
 
-interface VerifyEmailPageProps {
-  searchParams: Promise<{
-    email?: string;
-  }>;
-}
-
-async function VerifyEmailContent({ email }: { email: string }) {
-  return <EmailOTPVerification email={email} />;
-}
-
-export default async function VerifyEmailPage({
-  searchParams,
-}: VerifyEmailPageProps) {
-  const params = await searchParams;
-  const email = params.email || "";
+export default function VerifyEmailPage() {
+  const searchParams = useSearchParams();
+  const email = searchParams.get("email") || "";
 
   if (!email) {
     return (
@@ -30,9 +20,5 @@ export default async function VerifyEmailPage({
     );
   }
 
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <VerifyEmailContent email={email} />
-    </Suspense>
-  );
+  return <EmailOTPVerification email={email} />;
 }

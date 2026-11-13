@@ -1,21 +1,11 @@
-import { Suspense } from "react";
+"use client";
+
+import { useSearchParams } from "next/navigation";
 import { LoginOTPVerification } from "@/components/web/login-otp-verification";
 
-interface Login2FAPageProps {
-  searchParams: Promise<{
-    email?: string;
-  }>;
-}
-
-async function Login2FAContent({ email }: { email: string }) {
-  return <LoginOTPVerification email={email} />;
-}
-
-export default async function Login2FAPage({
-  searchParams,
-}: Login2FAPageProps) {
-  const params = await searchParams;
-  const email = params.email || "";
+export default function Login2FAPage() {
+  const searchParams = useSearchParams();
+  const email = searchParams.get("email") || "";
 
   if (!email) {
     return (
@@ -30,9 +20,5 @@ export default async function Login2FAPage({
     );
   }
 
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <Login2FAContent email={email} />
-    </Suspense>
-  );
+  return <LoginOTPVerification email={email} />;
 }
