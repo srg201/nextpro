@@ -49,22 +49,25 @@ export const SignupForm = () => {
     try {
       setErrorMessage("");
 
-      const response = await authClient.signUp.email(data);
-
-      if (response.error) {
-        const errorMsg =
-          response.error?.message || "Sign up failed. Please try again.";
-        setErrorMessage(errorMsg);
-        toast.error(errorMsg);
-        return;
-      }
-
-      if (response.data?.user) {
-        toast.success(
-          `Account created successfully! Welcome, ${data.name}!`
-        );
-        router.push("/");
-      }
+      await authClient.signUp.email(data, {
+        onRequest: () => {
+          // Called when the request starts
+          setErrorMessage("");
+        },
+        onSuccess: () => {
+          // Called when the request succeeds
+          toast.success(
+            `Account created successfully! Welcome, ${data.name}!`
+          );
+          router.push("/");
+        },
+        onError: (ctx) => {
+          // Called when the request fails
+          const errorMsg = ctx.error?.message || "Sign up failed. Please try again.";
+          setErrorMessage(errorMsg);
+          toast.error(errorMsg);
+        },
+      });
     } catch (error: any) {
       const errorMsg =
         error?.message || "An unexpected error occurred. Please try again.";

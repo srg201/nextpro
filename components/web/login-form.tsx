@@ -48,20 +48,23 @@ export const LoginForm = () => {
     try {
       setErrorMessage("");
 
-      const response = await authClient.signIn.email(data);
-
-      if (response.error) {
-        const errorMsg =
-          response.error?.message || "Sign in failed. Please try again.";
-        setErrorMessage(errorMsg);
-        toast.error(errorMsg);
-        return;
-      }
-
-      if (response.data?.user) {
-        toast.success(`Welcome back, ${response.data.user.name || "User"}!`);
-        router.push("/");
-      }
+      await authClient.signIn.email(data, {
+        onRequest: () => {
+          // Called when the request starts
+          setErrorMessage("");
+        },
+        onSuccess: () => {
+          // Called when the request succeeds
+          toast.success(`Welcome back, ${data.email}!`);
+          router.push("/");
+        },
+        onError: (ctx) => {
+          // Called when the request fails
+          const errorMsg = ctx.error?.message || "Sign in failed. Please try again.";
+          setErrorMessage(errorMsg);
+          toast.error(errorMsg);
+        },
+      });
     } catch (error: any) {
       const errorMsg =
         error?.message || "An unexpected error occurred. Please try again.";
