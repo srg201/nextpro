@@ -5,8 +5,10 @@ import { Button } from "../ui/button";
 import { useConvexAuth } from "convex/react";
 import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 const Navbar = () => {
+    const router = useRouter();
     const {isAuthenticated, isLoading} = useConvexAuth();
     return (
         <nav className="w-full py-5 flex items-center justify-between">
@@ -32,6 +34,8 @@ const Navbar = () => {
                         fetchOptions: {
                             onSuccess: () => {
                                 toast.success("Successfully signed out");
+                                router.replace("/");
+                                router.refresh();
                             },
                             onError: (err) => {
                                 toast.error(err.error?.message || "Sign out failed. Please try again.");

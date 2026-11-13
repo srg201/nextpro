@@ -24,69 +24,42 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth-client";
+import { getAuthErrorMessage } from "@/lib/auth-errors";
+import { setPendingEmail } from "@/lib/pending-email";
 import { signUpSchema } from "@/app/schemas/auth";
 
-type SignUpFormData = z.infer<typeof signUpSchema>;
+type SignUpInput = z.input<typeof signUpSchema>;
+type SignUpData = z.output<typeof signUpSchema>;
 
 export const SignupForm = () => {
   const router = useRouter();
-  const [errorMessage, setErrorMessage] = useState<string>("");
+  const [errorMessage, setErrorMessage] = useState("");
 
   const {
     control,
     handleSubmit,
-    formState: { isSubmitting, errors },
-  } = useForm<SignUpFormData>({
+    reset,
+    formState: { isSubmitting },
+  } = useForm<SignUpInput, unknown, SignUpData>({
     resolver: zodResolver(signUpSchema),
-    defaultValues: {
-      name: "",
-      email: "",
-      password: "",
-    },
+    defaultValues: { name: "", email: "", password: "" },
   });
 
-  const onSubmit = async (data: SignUpFormData) => {
-    try {
-      setErrorMessage("");
+  const onSubmit = async (data: SignUpData) => {
+    setErrorMessage("");
+    const { error } = await authClient.signUp.email(data);
 
-      // Step 1: Create the account
-      const signUpResponse = await authClient.signUp.email(data, {
-        onRequest: () => {
-          setErrorMessage("");
-        },
-        onSuccess: async () => {
-          // Step 2: Send OTP code to email after account creation
-          try {
-            await authClient.emailOtp.sendVerificationOtp({
-              email: data.email,
-              type: "email-verification",
-            });
-
-            toast.success("Account created! Check your email for verification code.");
-
-            // Step 3: Redirect to email verification page
-            router.push(`/auth/verify-email?email=${encodeURIComponent(data.email)}`);
-          } catch (error: any) {
-            const errorMsg =
-              error?.message ||
-              "Account created but failed to send verification code";
-            setErrorMessage(errorMsg);
-            toast.error(errorMsg);
-          }
-        },
-        onError: (ctx) => {
-          const errorMsg =
-            ctx.error?.message || "Sign up failed. Please try again.";
-          setErrorMessage(errorMsg);
-          toast.error(errorMsg);
-        },
-      });
-    } catch (error: any) {
-      const errorMsg =
-        error?.message || "An unexpected error occurred. Please try again.";
-      setErrorMessage(errorMsg);
-      toast.error(errorMsg);
+    if (error) {
+      const message = getAuthErrorMessage(error, "Sign up failed. Please try again.");
+      setErrorMessage(message);
+      toast.error(message);
+      return;
     }
+
+    reset();
+    setPendingEmail(data.email);
+    toast.success("Check your email for a verification code");
+    router.push("/auth/verify-email");
   };
 
   return (
@@ -98,7 +71,7 @@ export const SignupForm = () => {
         </CardHeader>
         <CardContent>
           {errorMessage && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+            <div role="alert" className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
               {errorMessage}
             </div>
           )}
@@ -110,16 +83,16 @@ export const SignupForm = () => {
                 control={control}
                 render={({ field, fieldState }) => (
                   <Field>
-                    <FieldLabel>Full Name</FieldLabel>
+                    <FieldLabel htmlFor="name">Full Name</FieldLabel>
                     <Input
                       {...field}
+                      id="name"
+                      autoComplete="name"
                       placeholder="John Doe"
                       aria-invalid={fieldState.invalid}
                       disabled={isSubmitting}
                     />
-                    {fieldState.invalid && fieldState.error && (
-                      <FieldError errors={[fieldState.error]} />
-                    )}
+                    {fieldState.error && <FieldError errors={[fieldState.error]} />}
                   </Field>
                 )}
               />
@@ -131,17 +104,17 @@ export const SignupForm = () => {
                 control={control}
                 render={({ field, fieldState }) => (
                   <Field>
-                    <FieldLabel>Email</FieldLabel>
+                    <FieldLabel htmlFor="email">Email</FieldLabel>
                     <Input
                       {...field}
+                      id="email"
                       type="email"
+                      autoComplete="email"
                       placeholder="john@example.com"
                       aria-invalid={fieldState.invalid}
                       disabled={isSubmitting}
                     />
-                    {fieldState.invalid && fieldState.error && (
-                      <FieldError errors={[fieldState.error]} />
-                    )}
+                    {fieldState.error && <FieldError errors={[fieldState.error]} />}
                   </Field>
                 )}
               />
@@ -153,36 +126,32 @@ export const SignupForm = () => {
                 control={control}
                 render={({ field, fieldState }) => (
                   <Field>
-                    <FieldLabel>Password</FieldLabel>
+                    <FieldLabel htmlFor="password">Password</FieldLabel>
                     <Input
                       {...field}
+                      id="password"
                       type="password"
+                      autoComplete="new-password"
                       placeholder="••••••••"
                       aria-invalid={fieldState.invalid}
                       disabled={isSubmitting}
                     />
-                    {fieldState.invalid && fieldState.error && (
-                      <FieldError errors={[fieldState.error]} />
-                    )}
+                    {fieldState.error && <FieldError errors={[fieldState.error]} />}
                   </Field>
                 )}
               />
-              <p className="text-xs text-gray-500 mt-1">
-                Password must contain at least 8 characters, including uppercase, lowercase, and a number.
+              <p className="text-xs text-muted-foreground mt-1">
+                At least 8 characters, including uppercase, lowercase and a number.
               </p>
             </FieldGroup>
 
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isSubmitting}
-            >
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? "Creating account..." : "Sign Up"}
             </Button>
           </form>
 
           <div className="mt-4 text-center text-sm">
-            <span className="text-gray-600">Already have an account? </span>
+            <span className="text-muted-foreground">Already have an account? </span>
             <Link href="/auth/login" className="text-blue-600 hover:underline">
               Sign in
             </Link>

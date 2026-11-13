@@ -24,53 +24,66 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth-client";
+import { getAuthErrorMessage } from "@/lib/auth-errors";
+import { setPendingEmail, setTwoFactorEmail } from "@/lib/pending-email";
 import { loginSchema } from "@/app/schemas/auth";
 
-type LoginFormData = z.infer<typeof loginSchema>;
+type LoginInput = z.input<typeof loginSchema>;
+type LoginData = z.output<typeof loginSchema>;
 
 export const LoginForm = () => {
   const router = useRouter();
-  const [errorMessage, setErrorMessage] = useState<string>("");
+  const [errorMessage, setErrorMessage] = useState("");
 
   const {
     control,
     handleSubmit,
-    formState: { isSubmitting, errors },
-  } = useForm<LoginFormData>({
+    reset,
+    resetField,
+    formState: { isSubmitting },
+  } = useForm<LoginInput, unknown, LoginData>({
     resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
+    defaultValues: { email: "", password: "" },
   });
 
-  const onSubmit = async (data: LoginFormData) => {
-    try {
-      setErrorMessage("");
+  const onSubmit = async (data: LoginData) => {
+    setErrorMessage("");
+    const { data: result, error } = await authClient.signIn.email(data);
 
-      await authClient.signIn.email(data, {
-        onRequest: () => {
-          // Called when the request starts
-          setErrorMessage("");
-        },
-        onSuccess: () => {
-          // Called when the request succeeds
-          toast.success(`Welcome back, ${data.email}!`);
-          router.push("/");
-        },
-        onError: (ctx) => {
-          // Called when the request fails
-          const errorMsg = ctx.error?.message || "Sign in failed. Please try again.";
-          setErrorMessage(errorMsg);
-          toast.error(errorMsg);
-        },
-      });
-    } catch (error: any) {
-      const errorMsg =
-        error?.message || "An unexpected error occurred. Please try again.";
-      setErrorMessage(errorMsg);
-      toast.error(errorMsg);
+    if (result && "twoFactorRedirect" in result && result.twoFactorRedirect) {
+      reset();
+      const { error: sendError } = await authClient.twoFactor.sendOtp();
+      if (sendError) {
+        const message = getAuthErrorMessage(sendError, "Failed to send verification code");
+        setErrorMessage(message);
+        toast.error(message);
+        return;
+      }
+      setTwoFactorEmail(data.email);
+      toast.info("We've sent a sign-in code to your email");
+      router.push("/auth/two-factor");
+      return;
     }
+
+    if (error?.code === "EMAIL_NOT_VERIFIED") {
+      reset();
+      setPendingEmail(data.email);
+      toast.info(getAuthErrorMessage(error));
+      router.push("/auth/verify-email");
+      return;
+    }
+
+    if (error) {
+      const message = getAuthErrorMessage(error, "Sign in failed. Please try again.");
+      setErrorMessage(message);
+      toast.error(message);
+      resetField("password");
+      return;
+    }
+
+    reset();
+    toast.success("Welcome back!");
+    router.push("/");
   };
 
   return (
@@ -82,7 +95,7 @@ export const LoginForm = () => {
         </CardHeader>
         <CardContent>
           {errorMessage && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+            <div role="alert" className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
               {errorMessage}
             </div>
           )}
@@ -94,17 +107,17 @@ export const LoginForm = () => {
                 control={control}
                 render={({ field, fieldState }) => (
                   <Field>
-                    <FieldLabel>Email</FieldLabel>
+                    <FieldLabel htmlFor="email">Email</FieldLabel>
                     <Input
                       {...field}
+                      id="email"
                       type="email"
+                      autoComplete="email"
                       placeholder="john@example.com"
                       aria-invalid={fieldState.invalid}
                       disabled={isSubmitting}
                     />
-                    {fieldState.invalid && fieldState.error && (
-                      <FieldError errors={[fieldState.error]} />
-                    )}
+                    {fieldState.error && <FieldError errors={[fieldState.error]} />}
                   </Field>
                 )}
               />
@@ -116,33 +129,37 @@ export const LoginForm = () => {
                 control={control}
                 render={({ field, fieldState }) => (
                   <Field>
-                    <FieldLabel>Password</FieldLabel>
+                    <div className="flex items-center justify-between">
+                      <FieldLabel htmlFor="password">Password</FieldLabel>
+                      <Link
+                        href="/auth/forgot-password"
+                        className="text-sm text-blue-600 hover:underline"
+                      >
+                        Forgot password?
+                      </Link>
+                    </div>
                     <Input
                       {...field}
+                      id="password"
                       type="password"
+                      autoComplete="current-password"
                       placeholder="••••••••"
                       aria-invalid={fieldState.invalid}
                       disabled={isSubmitting}
                     />
-                    {fieldState.invalid && fieldState.error && (
-                      <FieldError errors={[fieldState.error]} />
-                    )}
+                    {fieldState.error && <FieldError errors={[fieldState.error]} />}
                   </Field>
                 )}
               />
             </FieldGroup>
 
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isSubmitting}
-            >
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? "Signing in..." : "Sign In"}
             </Button>
           </form>
 
           <div className="mt-4 text-center text-sm">
-            <span className="text-gray-600">Don't have an account? </span>
+            <span className="text-muted-foreground">Don&apos;t have an account? </span>
             <Link href="/auth/signup" className="text-blue-600 hover:underline">
               Sign up
             </Link>

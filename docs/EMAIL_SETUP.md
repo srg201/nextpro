@@ -18,27 +18,27 @@ pnpm add resend
 
 ### Шаг 3: Добавить переменную окружения
 
-Открыть `.env.local` и добавить:
+Better Auth работает внутри Convex (`convex/auth.ts`), поэтому ключ нужно задать в окружении **Convex**, а не только в `.env.local`:
 
-```env
-RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxxxxx
+```bash
+npx convex env set RESEND_API_KEY re_xxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
-### Шаг 4: Обновить Sender Email
+### Шаг 4: Sender Email
 
-В файле `lib/auth-server.ts` найти:
+По умолчанию письма отправляются с `onboarding@resend.dev`. В этом тестовом режиме Resend доставляет письма **только на email, с которым вы зарегистрировались в Resend**.
 
-```typescript
-from: "noreply@example.com", // ← Измените это
+Для разработки можно перенаправить все письма на свой адрес (в теме будет указан исходный получатель):
+
+```bash
+npx convex env set EMAIL_OVERRIDE_TO you@example.com
 ```
 
-И поменять на:
+Чтобы отправлять письма на любые адреса, верифицируйте свой домен в Resend, удалите `EMAIL_OVERRIDE_TO` (`npx convex env remove EMAIL_OVERRIDE_TO`) и задайте:
 
-```typescript
-from: "noreply@yourdomain.com", // Или используемый email
+```bash
+npx convex env set EMAIL_FROM "noreply@yourdomain.com"
 ```
-
-**Важно:** Email должен быть верифицирован в Resend или использовать исходящий домен Resend.
 
 ## 🧪 Тестирование
 
