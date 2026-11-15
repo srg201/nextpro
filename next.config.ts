@@ -11,6 +11,11 @@ const nextConfig: NextConfig = {
         hostname: "images.unsplash.com",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "precious-ermine-526.eu-west-1.convex.cloud",
+        pathname: "/**"
+      }
     ],
   },
   turbopack: {

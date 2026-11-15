@@ -6,9 +6,10 @@ import { authComponent } from "./auth";
 export const createPost =mutation({
     args: {
         title: v.string(),
-        content: v.string()
+        content: v.string(),
+        imageStorageId: v.id("_storage")
     },
-    handler: async (ctx, { title, content }) => {
+    handler: async (ctx, { title, content, imageStorageId }) => {
         const user =await authComponent.getAuthUser(ctx);
 
         if(!user) {
@@ -19,6 +20,7 @@ export const createPost =mutation({
             title: title,
             content: content,
             authorId: user._id,
+            imageStorageId
         });
         return post;
     }
@@ -27,7 +29,32 @@ export const createPost =mutation({
 export const getPosts = query({
     args: {},
     handler: async (ctx) => {
-        const posts = await ctx.db.query("posts").order('desc').collect();
-        return posts;
+        const posts = (await ctx.db.query("posts").order('desc').collect());
+
+        return await Promise.all(
+            posts.map(async (post) => {
+                const resolvedImageUrl = post.imageStorageId !== undefined ? await ctx.storage.getUrl(post.imageStorageId) : null
+
+
+                return {
+                    ...post,
+                    imageUrl: resolvedImageUrl
+                }
+            })
+        );
+    }
+})
+
+export const generateImageUploadUrl = mutation({
+    args: {},
+    handler: async (ctx) => {
+        const user =await authComponent.getAuthUser(ctx);
+
+        if(!user) {
+            throw new ConvexError("Not authenticated");
+        }
+
+
+        return await ctx.storage.generateUploadUrl()
     }
 })

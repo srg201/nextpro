@@ -5,6 +5,7 @@ import { api } from "@/convex/_generated/api";
 import { fetchQuery } from "convex/nextjs";
 import Image from "next/image";
 import Link from "next/link";
+import { connection } from "next/server";
 import { Suspense } from "react";
 
 const Page = async () => {
@@ -36,6 +37,8 @@ const Page = async () => {
 export default Page;
 
 async function LoadBlogList() {
+  // Posts change often: render this part at request time, not at build time.
+  await connection();
   const data = await fetchQuery(api.posts.getPosts);
 
   return (
@@ -45,15 +48,14 @@ async function LoadBlogList() {
           key={article._id.toString()}
           className="w-full pt-0 rounded-xl flex flex-col gap-4 max-w-full"
         >
-          <Image
-            src={
-              "https://images.unsplash.com/photo-1788632036032-6046c3bcd5d2?q=80&w=2334&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D"
-            }
+          {article?.imageUrl && <Image
+            src={article.imageUrl}
             className="rounded-t-xl aspect-video"
             alt="Image"
             width={500}
             height={500}
-          />
+            loading="eager"
+          />}
           <CardContent className="flex flex-col gap-2.5 h-full">
             <Link href={`/blog/${article._id}`} className="block">
               <h1 className="text-2xl font-bold hover:text-primary transition-all">
