@@ -1,13 +1,12 @@
 "use client";
+import { createPostAction } from "@/app/actions/blog";
 import { postSchema } from "@/app/schemas/blog"
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { api } from "@/convex/_generated/api";
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useMutation } from "convex/react";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { Controller, useForm } from "react-hook-form"
@@ -19,7 +18,6 @@ import z from "zod";
 const Page = () => {
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
-  const mutation = useMutation(api.posts.createPost);
   const form = useForm({
     resolver: zodResolver(postSchema),
     defaultValues: {
@@ -28,17 +26,16 @@ const Page = () => {
     },
   })
 
-  const onSubmit = async (data: z.infer<typeof postSchema>) => {
+  const onSubmit = (data: z.infer<typeof postSchema>) => {
     startTransition(async () => {
-      try {
-        await mutation(data);
-        toast.success("Post created successfully!");
-        form.reset();
-        router.push("/");
-      } catch (error) {
-        console.error("Error creating post:", error);
-        toast.error("Failed to create post. Please try again.");
+      const result = await createPostAction(data);
+      if (!result.success) {
+        toast.error(result.error);
+        return;
       }
+      toast.success("Post created successfully!");
+      form.reset();
+      return router.push("/blog");
     })
   }
 
