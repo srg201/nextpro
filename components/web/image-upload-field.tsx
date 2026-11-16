@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ImageUpIcon, UploadCloudIcon, XIcon } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useId, useMemo } from "react";
 
 type ImageUploadFieldProps = {
   id?: string;
@@ -23,7 +23,8 @@ export function ImageUploadField({
   disabled,
   invalid,
 }: ImageUploadFieldProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const generatedId = useId();
+  const inputId = id ?? generatedId;
 
   const previewUrl = useMemo(
     () => (value ? URL.createObjectURL(value) : null),
@@ -36,10 +37,6 @@ export function ImageUploadField({
       if (previewUrl) URL.revokeObjectURL(previewUrl);
     };
   }, [previewUrl]);
-
-  const openPicker = () => {
-    if (!disabled) inputRef.current?.click();
-  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
@@ -74,43 +71,47 @@ export function ImageUploadField({
           >
             <XIcon className="size-4" />
           </Button>
+          {/* A native <label> opens the picker on touch devices too; JS input.click() is unreliable there. */}
           <Button
-            type="button"
+            asChild
             size="sm"
             variant="secondary"
-            onClick={openPicker}
-            disabled={disabled}
-            className="absolute bottom-2 right-2 shadow-md hover:cursor-pointer"
+            className={cn(
+              "absolute bottom-2 right-2 shadow-md hover:cursor-pointer",
+              disabled && "pointer-events-none opacity-50",
+            )}
           >
-            <ImageUpIcon className="size-4" />
-            Change
+            <label htmlFor={inputId} aria-disabled={disabled}>
+              <ImageUpIcon className="size-4" />
+              Change
+            </label>
           </Button>
           <p className="absolute bottom-2 left-2 max-w-[55%] truncate rounded-md bg-background/80 px-2 py-1 text-xs">
             {value?.name}
           </p>
         </div>
       ) : (
-        <button
-          type="button"
-          onClick={openPicker}
-          disabled={disabled}
+        <label
+          htmlFor={inputId}
+          aria-disabled={disabled}
           className={cn(
-            "aspect-video flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed bg-accent text-accent-foreground transition-colors hover:cursor-pointer hover:bg-accent/70 disabled:cursor-not-allowed disabled:opacity-50",
+            "aspect-video flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed bg-accent text-accent-foreground transition-colors hover:cursor-pointer hover:bg-accent/70 select-none",
+            disabled && "pointer-events-none opacity-50",
             invalid && "border-destructive",
           )}
         >
           <UploadCloudIcon className="size-14" />
           <span className="text-sm text-muted-foreground">
-            Click to upload an image
+            Tap to upload an image
           </span>
-        </button>
+        </label>
       )}
       <input
-        ref={inputRef}
-        id={id}
+        id={inputId}
         type="file"
         accept="image/*"
-        className="hidden"
+        // sr-only instead of display:none: some mobile browsers ignore hidden file inputs.
+        className="sr-only"
         onChange={handleChange}
         onBlur={onBlur}
         disabled={disabled}

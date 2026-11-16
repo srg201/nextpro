@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/convex/_generated/api";
 import { fetchQuery } from "convex/nextjs";
+import { cacheLife, cacheTag } from "next/cache";
 import Image from "next/image";
 import Link from "next/link";
 import { connection } from "next/server";
@@ -37,12 +38,13 @@ const Page = async () => {
 export default Page;
 
 async function LoadBlogList() {
-  // Posts change often: render this part at request time, not at build time.
-  await connection();
+  'use cache';
+  cacheLife('max')
+  cacheTag("posts")
   const data = await fetchQuery(api.posts.getPosts);
 
   return (
-    <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+    <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
       {data?.map((article) => (
         <Card
           key={article._id.toString()}
@@ -50,7 +52,7 @@ async function LoadBlogList() {
         >
           {article?.imageUrl && <Image
             src={article.imageUrl}
-            className="rounded-t-xl aspect-video"
+            className="rounded-t-xl aspect-video w-full object-fill"
             alt="Image"
             width={500}
             height={500}

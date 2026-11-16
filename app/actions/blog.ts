@@ -5,6 +5,7 @@ import { postSchema } from "../schemas/blog";
 import { fetchMutation } from "convex/nextjs";
 import { api } from "@/convex/_generated/api";
 import { getToken } from "@/lib/auth-server";
+import { updateTag } from "next/cache";
 
 type ActionResult = { success: true } | { success: false; error: string };
 
@@ -70,6 +71,6 @@ export const createPostAction = async (
       error: "Failed to create post. Please try again.",
     };
   }
-
+  updateTag('posts')
   return { success: true };
 };
