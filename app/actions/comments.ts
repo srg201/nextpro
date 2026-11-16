@@ -22,7 +22,7 @@ export const createCommentAction = async (
   if (!token) {
     return {
       success: false,
-      error: "You need to be logged in to create a post.",
+      error: "You need to be logged in to create a comment.",
     };
   }
 
