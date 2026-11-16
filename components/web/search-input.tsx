@@ -1,5 +1,5 @@
 import { Loader2Icon, Search } from "lucide-react";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Input } from "../ui/input";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -9,7 +9,21 @@ import Image from "next/image";
 const SearchInput = () => {
   const [term, setTerm] = useState("");
   const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
+  // Close the results dropdown when the user clicks/taps anywhere outside it.
+  useEffect(() => {
+    if (!open) return;
+
+    const handlePointerDown = (e: PointerEvent) => {
+      if (!containerRef.current?.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [open]);
 
   const results = useQuery(
     api.posts.searchPosts,
@@ -22,12 +36,13 @@ const SearchInput = () => {
   };
 
   return (
-    <div className="relative w-full min-w-0 max-w-sm">
+    <div ref={containerRef} className="relative w-full min-w-0 max-w-60">
       <div className="relative">
         <Search className="absolute left-2.5 top-2 size-4 text-muted-foreground" />
         <Input
           value={term}
           onChange={handleInputChange}
+          onFocus={() => setOpen(true)}
           type="search"
           placeholder="Search Posts..."
           className="w-full min-w-0 pl-8 bg-background text-xs md:text-sm"
