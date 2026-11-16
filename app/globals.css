@@ -5,6 +5,15 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* Homepage (Swiss editorial) tokens — values are defined on .home below */
+  --color-home-surface: var(--home-surface);
+  --color-home-surface-2: var(--home-surface-2);
+  --color-home-ink: var(--home-ink);
+  --color-home-muted: var(--home-muted);
+  --color-home-rule: var(--home-rule);
+  --color-home-accent: var(--home-accent);
+  --color-home-accent-text: var(--home-accent-text);
+  --font-home: var(--home-font);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
@@ -126,5 +135,86 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Homepage — Swiss editorial direction.                               */
+/* Scoped to .home so other pages keep the default shadcn theme.       */
+/* ------------------------------------------------------------------ */
+.home {
+  --home-font: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --home-surface: #ffffff;
+  --home-surface-2: #f7f7f8;
+  --home-ink: #111111;
+  --home-muted: #5c5c5c;
+  --home-rule: #e5e5e5;
+  --home-accent: #002fa7; /* Yves Klein Blue: fills */
+  --home-accent-text: #002fa7; /* accent used as text */
+
+  /* Re-point shadcn tokens so Button & co. follow the Swiss rules here */
+  --radius: 0rem;
+  --background: var(--home-surface);
+  --foreground: var(--home-ink);
+  --muted-foreground: var(--home-muted);
+  --border: var(--home-rule);
+  --input: var(--home-rule);
+  --primary: var(--home-accent);
+  --primary-foreground: #ffffff;
+  --secondary: var(--home-surface-2);
+  --secondary-foreground: var(--home-ink);
+  --accent: var(--home-surface-2);
+  --accent-foreground: var(--home-ink);
+  --ring: var(--home-accent);
+
+  font-family: var(--home-font);
+  background-color: var(--home-surface);
+  color: var(--home-ink);
+}
+
+.dark .home {
+  --home-surface: #0b0b0c;
+  --home-surface-2: #161618;
+  --home-ink: #f5f5f5;
+  --home-muted: #9a9a9a;
+  --home-rule: #262626;
+  --home-accent: #002fa7; /* fills stay Klein Blue */
+  --home-accent-text: #4d7cff; /* lighter for text contrast on dark */
+}
+
+/* Let the whole page (including the navbar area) sit on the homepage surface,
+   and clip the full-bleed band so it never causes horizontal scroll. */
+html:has(.home) body {
+  background-color: #ffffff;
+  overflow-x: clip;
+}
+
+html.dark:has(.home) body {
+  background-color: #0b0b0c;
+}
+
+/* Homepage helpers as real Tailwind utilities: they live in the utilities layer,
+   so they work with variants (hover:, lg:) and never override focus rings. */
+@utility home-display {
+  letter-spacing: -0.03em;
+  line-height: 0.95;
+}
+
+@utility home-folio {
+  font-variant-numeric: tabular-nums;
+}
+
+@utility home-fade {
+  transition-property: opacity, transform, color;
+  transition-duration: 180ms;
+  transition-timing-function: ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home *,
+  .home *::before,
+  .home *::after {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
   }
 }

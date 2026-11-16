@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   // Dev only: lets a phone on the same Wi-Fi open the dev server by the Mac's LAN IP.
-  allowedDevOrigins: ["192.168.0.*"],
+  allowedDevOrigins: ["192.168.*"],
   experimental: {
     serverActions: {
       // Phone photos are often 3–8 MB; the default Server Action limit is 1 MB.
