@@ -2,10 +2,13 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import CommentSection from "@/components/web/comment-sections";
+import PostPresence from "@/components/web/post-presence";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
-import { fetchQuery } from "convex/nextjs";
+import { getToken } from "@/lib/auth-server";
+import { fetchQuery, preloadQuery } from "convex/nextjs";
 import { ArrowLeft } from "lucide-react";
+import { Metadata } from "next";
 import { cacheLife, cacheTag } from "next/cache";
 import Image from "next/image";
 import Link from "next/link";
@@ -34,11 +37,18 @@ export default async function PostIdRoute(props: PostIdRouteProps) {
 }
 
 async function LoadPost({ params }: PostIdRouteProps) {
-  "use cache";
-  cacheLife("max");
+  // "use cache";
+  // cacheLife("max");
+  const token = await getToken()
   const { id } = await params;
-  const post = await fetchQuery(api.posts.getPostById, { postId: id });
-  const comments = await getCommentsForPost(id);
+  const [post, comments, userId] = await Promise.all([
+    await fetchQuery(api.posts.getPostById, { postId: id }),
+    await preloadQuery(api.comments.getCommentsByPostId, {
+      postId: id,
+    }),
+    await fetchQuery(api.presence.getUserId, {}, {token})
+  ]);
+
 
   if (!post?._id) {
     return (
@@ -61,17 +71,21 @@ async function LoadPost({ params }: PostIdRouteProps) {
       <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight">
         {post.title}
       </h1>
-      <span className="text-muted-foreground text-sm">
+      <div className="flex items-center gap-2">
+        <span className="text-muted-foreground text-sm">
         Posted on{" "}
         {new Date(Number(post._creationTime?.toString())).toLocaleDateString(
           "en-US",
         )}
       </span>
+      <Separator orientation="vertical" />
+      {userId && <PostPresence roomId={post._id} userId={userId} />}
+      </div>
       <Separator />
       <p className="text-sm md:text-lg text-muted-foreground">{post.content}</p>
 
       <Separator />
-      <CommentSection comments={comments} postId={post._id} />
+      <CommentSection preloadedComments={comments} postId={post._id} />
     </div>
   );
 }
@@ -91,27 +105,22 @@ function PostIdSkeleton() {
   );
 }
 
-// function CommentsSectionSkeleton() {
-//   return (
-//     <div className="flex flex-col gap-4 w-full ">
-//       {[...Array(3)].map((_, idx) => (
-//         <div className="w-full border-b p-4" key={idx}>
-//           <div className="flex gap-2">
-//             <Skeleton className="h-5 w-1/6"></Skeleton>
-//             <Skeleton className="h-5 w-1/6"></Skeleton>
-//           </div>
-//           <Skeleton className="h-4 w-2/3"></Skeleton>
-//         </div>
-//       ))}
-//     </div>
-//   );
-// }
+export async function generateMetadata({params}: PostIdRouteProps): Promise<Metadata> {
+  "use cache"
+  cacheLife("max")
+  const {id} = await params;
 
-async function getCommentsForPost(postId: Id<"posts">) {
-  "use cache";
-  cacheLife("max");
-  cacheTag("comments");
-  return await fetchQuery(api.comments.getCommentsByPostId, {
-    postId,
-  });
+  const post = await fetchQuery(api.posts.getPostById, {postId: id})
+
+  if(!post) {
+    return {
+      title: "Post not found"
+    }
+  }
+
+  return {
+    title: post.title,
+    description: post.content
+  }
+
 }

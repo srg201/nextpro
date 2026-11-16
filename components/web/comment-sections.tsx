@@ -12,36 +12,33 @@ import { Button } from "../ui/button";
 import { Suspense, useTransition } from "react";
 import { createCommentAction } from "@/app/actions/comments";
 import { toast } from "sonner";
+import { Avatar, AvatarImage } from "../ui/avatar";
+import { Textarea } from "../ui/textarea";
+import { Preloaded, usePreloadedQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 
-interface ICommentInterface {
-  _id: Id<"comments">;
-  _creationTime: number;
-  body: string;
-  postId: Id<"posts">;
-  authorId: string;
-  authorName: string;
-}
 
 const CommentSection = ({
   postId,
-  comments,
+  preloadedComments,
 }: {
   postId: Id<"posts">;
-  comments: ICommentInterface[];
+  preloadedComments: Preloaded<typeof api.comments.getCommentsByPostId>;
 }) => {
   const [isPending, startTransition] = useTransition();
   const form = useForm({
     resolver: zodResolver(commentSchema),
     defaultValues: { body: "", postId },
   });
+  const comments = usePreloadedQuery(preloadedComments)
 
   const onSubmit = async (data: z.infer<typeof commentSchema>) => {
     try {
       startTransition(async () => {
         const result = await createCommentAction(data);
-        if(!result.success) {
-            toast.error(result.error)
-            return;
+        if (!result.success) {
+          toast.error(result.error);
+          return;
         }
         toast.success("Successfully added a comment");
       });
@@ -49,7 +46,7 @@ const CommentSection = ({
       console.log(error);
       toast.error("Something went wrong");
     } finally {
-        form.reset();
+      form.reset();
     }
   };
 
@@ -57,12 +54,14 @@ const CommentSection = ({
     <Card>
       <CardHeader className="flex gap-2 items-center border-b">
         <MessagesSquare className="size-5" />
-        <h2 className="text-xl font-bold">{comments.length === 1 ? "1 Comment" : `${comments.length} Comments`}</h2>
+        <h2 className="text-xl font-bold">
+          {comments.length === 1 ? "1 Comment" : `${comments.length} Comments`}
+        </h2>
       </CardHeader>
       <CardContent>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="flex gap-2 items-end"
+          className="flex flex-col gap-2 items-end"
         >
           <FieldGroup>
             <Controller
@@ -71,7 +70,7 @@ const CommentSection = ({
               render={({ field, fieldState }) => (
                 <Field>
                   <FieldLabel htmlFor="body">Comment</FieldLabel>
-                  <Input
+                  <Textarea
                     {...field}
                     id="body"
                     placeholder="John Doe"
@@ -86,7 +85,7 @@ const CommentSection = ({
             />
           </FieldGroup>
           <Button type="submit" className="hover:cursor-pointer">
-            {isPending ? "Adding..." : "Add"}
+            {isPending ? "Adding..." : "Add Comment"}
           </Button>
         </form>
       </CardContent>
@@ -94,14 +93,25 @@ const CommentSection = ({
         <Suspense fallback={<div>Loading...</div>}>
           <div className="flex flex-col gap-4 w-full ">
             {comments.map((comment) => (
-            <div className="w-full border-b p-4" key={comment._id}>
+              <div className="w-full border-b p-4 flex flex-col gap-2" key={comment._id}>
                 <div className="flex gap-2">
-                    <h3 className="text-muted-foreground">{comment.authorName}</h3>
-                    <span className="text-sm text-muted-foreground">{new Date(Number(comment._creationTime)).toLocaleDateString("en-US")}</span>
+                  <Avatar className="size-10">
+                    <AvatarImage src={`https://avatar.vercel.sh/${comment.authorName}.svg?text=${comment.authorName.slice(0,2)}`} />
+                  </Avatar>
+                  <div className="flex flex-col gap-0.5">
+                    <h3 className="font-medium">
+                      {comment.authorName}
+                    </h3>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(
+                        Number(comment._creationTime),
+                      ).toLocaleDateString("en-US")}
+                    </span>
+                  </div>
                 </div>
                 <p>{comment.body}</p>
-            </div>
-          ))}
+              </div>
+            ))}
           </div>
         </Suspense>
       </CardFooter>

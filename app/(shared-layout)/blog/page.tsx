@@ -3,11 +3,17 @@ import { Card, CardContent, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/convex/_generated/api";
 import { fetchQuery } from "convex/nextjs";
+import { Metadata } from "next";
 import { cacheLife, cacheTag } from "next/cache";
 import Image from "next/image";
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
+
+export const metadata: Metadata = {
+  title: "Blog | Next.js 16",
+  description: "Use our blog page to improve your next.js 16 knowledge"
+}
 
 const Page = async () => {
   return (
