@@ -48,10 +48,10 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
       maxPasswordLength: 128,
       revokeSessionsOnPasswordReset: true,
       onPasswordReset: async ({ user }) => {
-        await sendPasswordChangedEmail(user.email);
+        await sendPasswordChangedEmail(ctx, user.email);
       },
       onExistingUserSignUp: async ({ user }) => {
-        await sendExistingAccountEmail(user.email);
+        await sendExistingAccountEmail(ctx, user.email);
       },
     },
     emailVerification: {
@@ -125,7 +125,7 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
         storeOTP: "hashed",
         rateLimit: { window: 60, max: 5 },
         async sendVerificationOTP({ email, otp, type }) {
-          await sendOtpEmail(email, otp, type, OTP_EXPIRES_IN_SECONDS / 60);
+          await sendOtpEmail(ctx, email, otp, type, OTP_EXPIRES_IN_SECONDS / 60);
         },
       }),
       twoFactor({
@@ -138,7 +138,7 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
           storeOTP: "hashed",
           allowedAttempts: 5,
           async sendOTP({ user, otp }) {
-            await sendOtpEmail(user.email, otp, "sign-in", TWO_FACTOR_OTP_MINUTES);
+            await sendOtpEmail(ctx, user.email, otp, "sign-in", TWO_FACTOR_OTP_MINUTES);
           },
         },
       }),

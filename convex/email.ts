@@ -1,3 +1,8 @@
+import type { GenericCtx } from "@convex-dev/better-auth";
+import { requireActionCtx } from "@convex-dev/better-auth/utils";
+import { internal } from "./_generated/api";
+import type { DataModel } from "./_generated/dataModel";
+
 type OtpType =
   | "sign-in"
   | "email-verification"
@@ -21,36 +26,15 @@ const layout = (title: string, body: string) => `
   </div>
 `;
 
-async function sendEmail(to: string, subject: string, html: string) {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    throw new Error("RESEND_API_KEY is not set in the Convex environment");
-  }
-
-  // Dev only: Resend's test sender can deliver only to the account owner.
-  const override = process.env.EMAIL_OVERRIDE_TO;
-
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: process.env.EMAIL_FROM ?? "NextPro <onboarding@resend.dev>",
-      to: override || to,
-      subject: override ? `[to: ${to}] ${subject}` : subject,
-      html,
-    }),
-  });
-
-  if (!res.ok) {
-    console.error("Resend error:", res.status, await res.text());
-    throw new Error("Failed to send email");
-  }
+// Emails are sent by a Node action (nodemailer + Gmail SMTP), see mailer.ts.
+// Better Auth runs its email callbacks inside Convex HTTP actions, so the auth
+// ctx is an action ctx and can call it directly.
+async function sendEmail(ctx: GenericCtx<DataModel>, to: string, subject: string, html: string) {
+  await requireActionCtx(ctx).runAction(internal.mailer.send, { to, subject, html });
 }
 
 export async function sendOtpEmail(
+  ctx: GenericCtx<DataModel>,
   to: string,
   otp: string,
   type: OtpType,
@@ -58,6 +42,7 @@ export async function sendOtpEmail(
 ) {
   const subject = OTP_SUBJECTS[type];
   await sendEmail(
+    ctx,
     to,
     subject,
     layout(
@@ -73,8 +58,9 @@ export async function sendOtpEmail(
   );
 }
 
-export async function sendExistingAccountEmail(to: string) {
+export async function sendExistingAccountEmail(ctx: GenericCtx<DataModel>, to: string) {
   await sendEmail(
+    ctx,
     to,
     "Sign-up attempt with your email",
     layout(
@@ -87,8 +73,9 @@ export async function sendExistingAccountEmail(to: string) {
   );
 }
 
-export async function sendPasswordChangedEmail(to: string) {
+export async function sendPasswordChangedEmail(ctx: GenericCtx<DataModel>, to: string) {
   await sendEmail(
+    ctx,
     to,
     "Your password was changed",
     layout(

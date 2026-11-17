@@ -13,6 +13,7 @@ import type * as comments from "../comments.js";
 import type * as email from "../email.js";
 import type * as home from "../home.js";
 import type * as http from "../http.js";
+import type * as mailer from "../mailer.js";
 import type * as posts from "../posts.js";
 import type * as presence from "../presence.js";
 
@@ -28,6 +29,7 @@ declare const fullApi: ApiFromModules<{
   email: typeof email;
   home: typeof home;
   http: typeof http;
+  mailer: typeof mailer;
   posts: typeof posts;
   presence: typeof presence;
 }>;
