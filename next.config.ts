@@ -1,5 +1,14 @@
 import type { NextConfig } from "next";
 
+// Images are served from the Convex deployment this build talks to: the dev deployment
+// locally (.env.local), the production one on Vercel (set by `npx convex deploy --cmd ...`).
+// Allowing only that exact host is safer than "*.convex.cloud", which is shared by every Convex user.
+const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+if (!convexUrl) {
+  throw new Error("NEXT_PUBLIC_CONVEX_URL is not set; it is needed to allow Convex storage images.");
+}
+const convexHostname = new URL(convexUrl).hostname;
+
 const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
@@ -21,9 +30,10 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "precious-ermine-526.eu-west-1.convex.cloud",
-        pathname: "/**"
-      }
+        hostname: convexHostname,
+        // Convex file storage URLs look like /api/storage/<id>
+        pathname: "/api/storage/**",
+      },
     ],
   },
   turbopack: {
