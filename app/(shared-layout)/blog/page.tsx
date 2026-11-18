@@ -11,8 +11,8 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 
 export const metadata: Metadata = {
-  title: "Blog | Next.js 16",
-  description: "Use our blog page to improve your next.js 16 knowledge"
+  title: "Blog",
+  description: "Next.js tutorials written by developers, newest first."
 }
 
 const Page = async () => {
@@ -20,10 +20,10 @@ const Page = async () => {
     <div className="py-12">
       <div className="text-center pb-12">
         <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">
-          Our Blog
+          Tutorials
         </h1>
         <p className="pt-4 max-w-2xl mx-auto text-xl text-muted-foreground">
-          Inside, thoughts and trends from our team.
+          Next.js tutorials written by developers, newest first.
         </p>
       </div>
       <Suspense

@@ -73,7 +73,7 @@ const CommentSection = ({
                   <Textarea
                     {...field}
                     id="body"
-                    placeholder="John Doe"
+                    placeholder="Share your thoughts or ask a question"
                     aria-invalid={fieldState.invalid}
                     disabled={form.formState.isSubmitting}
                   />

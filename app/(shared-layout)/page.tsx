@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { WriteCtaActions } from "@/components/web/home/write-cta-actions";
 
 export const metadata: Metadata = {
-  title: "NextPro — Next.js tutorials by developers",
+  title: { absolute: "NextPro — Next.js tutorials by developers" },
   description:
     "Read and write Next.js tutorials. Developers publish posts, readers discuss them in the comments, and you can see who's reading right now.",
 };

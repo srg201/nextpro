@@ -22,8 +22,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Next Pro",
-  description: "Next Pro is a platform for tutorials about Next.js",
+  title: { default: "NextPro — Next.js tutorials by developers", template: "%s — NextPro" },
+  description: "Read and write Next.js tutorials, discuss them in the comments and see who is reading right now.",
 };
 
 export default function RootLayout({
